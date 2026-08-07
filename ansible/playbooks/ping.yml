@@ -1,0 +1,17 @@
+---
+- name: Verify Ansible Connectivity
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Ping all hosts
+      ansible.builtin.ping:
+
+    - name: Display hostname
+      ansible.builtin.command: hostname
+      register: hostname_output
+
+    - name: Show hostname
+      ansible.builtin.debug:
+        var: hostname_output.stdout
