@@ -37,3 +37,11 @@ variable "private_subnet_2_cidr" {
   description = "Private Subnet 2 CIDR"
   type        = string
 }
+
+
+
+
+variable "instance_type" {
+  description = "EC2 Instance Type"
+  type        = string
+}

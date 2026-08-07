@@ -11,3 +11,8 @@ public_subnet_2_cidr = "10.10.2.0/24"
 
 private_subnet_1_cidr = "10.10.11.0/24"
 private_subnet_2_cidr = "10.10.12.0/24"
+
+
+
+
+instance_type = "t3.micro"
