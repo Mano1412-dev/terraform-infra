@@ -6,19 +6,17 @@ resource "aws_vpc" "main" {
 
   enable_dns_hostnames = true
 
-  tags = {
+  tags = merge(
 
-    Name = "${var.project_name}-${var.environment}-vpc"
+    local.common_tags,
 
-    Project = var.project_name
+    {
 
-    Environment = var.environment
+      Name = "${local.name_prefix}-vpc"
 
-    ManagedBy = "Terraform"
+    }
 
-    Owner = "SRE-Team"
-
-  }
+  )
 
 }
 
@@ -28,16 +26,17 @@ resource "aws_subnet" "public_subnet_1" {
 
   cidr_block = var.public_subnet_1_cidr
 
-  availability_zone = "ap-south-1a"
+  availability_zone = data.aws_availability_zones.available.names[0]
 
   map_public_ip_on_launch = true
 
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-public-subnet-1"
-    Project     = var.project_name
-    Environment = var.environment
-    Tier        = "Public"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-public-subnet-1"
+      Tier = "Public"
+    }
+  )
 }
 
 resource "aws_subnet" "public_subnet_2" {
@@ -46,16 +45,17 @@ resource "aws_subnet" "public_subnet_2" {
 
   cidr_block = var.public_subnet_2_cidr
 
-  availability_zone = "ap-south-1b"
+  availability_zone = data.aws_availability_zones.available.names[1]
 
   map_public_ip_on_launch = true
 
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-public-subnet-2"
-    Project     = var.project_name
-    Environment = var.environment
-    Tier        = "Public"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-public-subnet-2"
+      Tier = "Public"
+    }
+  )
 }
 
 resource "aws_subnet" "private_subnet_1" {
@@ -64,14 +64,15 @@ resource "aws_subnet" "private_subnet_1" {
 
   cidr_block = var.private_subnet_1_cidr
 
-  availability_zone = "ap-south-1a"
+  availability_zone = data.aws_availability_zones.available.names[0]
 
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-private-subnet-1"
-    Project     = var.project_name
-    Environment = var.environment
-    Tier        = "Private"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-subnet-1"
+      Tier = "Private"
+    }
+  )
 }
 
 resource "aws_subnet" "private_subnet_2" {
@@ -80,12 +81,13 @@ resource "aws_subnet" "private_subnet_2" {
 
   cidr_block = var.private_subnet_2_cidr
 
-  availability_zone = "ap-south-1b"
+  availability_zone = data.aws_availability_zones.available.names[1]
 
-  tags = {
-    Name        = "${var.project_name}-${var.environment}-private-subnet-2"
-    Project     = var.project_name
-    Environment = var.environment
-    Tier        = "Private"
-  }
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-subnet-2"
+      Tier = "Private"
+    }
+  )
 }

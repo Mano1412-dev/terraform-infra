@@ -40,3 +40,26 @@ output "private_subnet_2_id" {
   value = aws_subnet.private_subnet_2.id
 }
 
+output "nat_gateway_id" {
+
+  value = aws_nat_gateway.main.id
+
+}
+
+output "elastic_ip" {
+
+  value = aws_eip.nat.public_ip
+
+}
+
+output "public_security_group_id" {
+
+  value = aws_security_group.public_sg.id
+
+}
+
+output "private_security_group_id" {
+
+  value = aws_security_group.private_sg.id
+
+}
