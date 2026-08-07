@@ -1,0 +1,10 @@
+---
+timezone: Asia/Kolkata
+
+common_packages:
+  - git
+  - unzip
+  - wget
+  - vim
+  - tar
+  - jq
