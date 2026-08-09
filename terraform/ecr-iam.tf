@@ -26,6 +26,7 @@ resource "aws_iam_role_policy" "jenkins_ecr" {
           "ecr:BatchGetImage",
           "ecr:CompleteLayerUpload",
           "ecr:DescribeRepositories",
+          "ecr:DescribeImages",
           "ecr:GetDownloadUrlForLayer",
           "ecr:InitiateLayerUpload",
           "ecr:ListImages",

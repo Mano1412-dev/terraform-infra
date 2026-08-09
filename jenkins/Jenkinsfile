@@ -126,6 +126,60 @@ pipeline {
             }
         }
 
+        stage('Production Approval') {
+            steps {
+                input message: 'Stage deployment is healthy. Deploy this version to Production?',
+                      ok: 'Deploy to Production'
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                sshagent(['stage-ssh-key']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "aws ecr get-login-password --region ${AWS_REGION} | \
+                             docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker pull ${IMAGE_URI}"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker stop shopkart-api || true"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker rm shopkart-api || true"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker run -d \
+                             --name shopkart-api \
+                             --restart unless-stopped \
+                             -p 8000:8000 \
+                             ${IMAGE_URI}"
+                    '''
+                }
+            }
+        }
+
+        stage('Production Health Check') {
+            steps {
+                sshagent(['stage-ssh-key']) {
+                    sh '''
+                        sleep 5
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "curl -f http://localhost:8000/health"
+                    '''
+                }
+            }
+        }
+
         stage('Verify ECR Image') {
             steps {
                 sh '''
