@@ -2,8 +2,12 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "shopkart-api"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
+        AWS_REGION = "ap-south-1"
+        AWS_ACCOUNT_ID = "052003592121"
+        ECR_REPOSITORY = "shopkart-api"
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        IMAGE_URI = "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
     }
 
     stages {
@@ -14,11 +18,13 @@ pipeline {
             }
         }
 
-        stage('Verify Python') {
+        stage('Verify Tools') {
             steps {
                 sh '''
                     python3 --version
                     pip3 --version
+                    docker --version
+                    aws --version
                 '''
             }
         }
@@ -45,17 +51,41 @@ pipeline {
             steps {
                 sh '''
                     cd app
+
                     docker build \
-                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                      -t ${IMAGE_URI} \
                       .
                 '''
             }
         }
 
-        stage('Docker Image Check') {
+        stage('ECR Login') {
             steps {
                 sh '''
-                    docker images ${IMAGE_NAME}:${IMAGE_TAG}
+                    aws ecr get-login-password \
+                      --region ${AWS_REGION} \
+                      | docker login \
+                        --username AWS \
+                        --password-stdin ${ECR_REGISTRY}
+                '''
+            }
+        }
+
+        stage('Push Image to ECR') {
+            steps {
+                sh '''
+                    docker push ${IMAGE_URI}
+                '''
+            }
+        }
+
+        stage('Verify ECR Image') {
+            steps {
+                sh '''
+                    aws ecr describe-images \
+                      --repository-name ${ECR_REPOSITORY} \
+                      --image-ids imageTag=${IMAGE_TAG} \
+                      --region ${AWS_REGION}
                 '''
             }
         }
@@ -63,11 +93,12 @@ pipeline {
 
     post {
         success {
-            echo 'CI Pipeline completed successfully.'
+            echo "CI/CD image build successful."
+            echo "Image: ${IMAGE_URI}"
         }
 
         failure {
-            echo 'CI Pipeline failed.'
+            echo "Pipeline failed."
         }
 
         always {
