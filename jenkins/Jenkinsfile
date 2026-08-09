@@ -188,6 +188,69 @@ pipeline {
             }
         }
 
+        stage('Production Rollback') {
+            when {
+                expression {
+                    params.ROLLBACK_TAG?.trim()
+                }
+            }
+
+            steps {
+                echo "Rolling back Production to shopkart-api:${params.ROLLBACK_TAG}"
+
+                sshagent(['stage-ssh-key']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "aws ecr get-login-password --region ${AWS_REGION} | \
+                             docker login \
+                             --username AWS \
+                             --password-stdin ${ECR_REGISTRY}"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:${params.ROLLBACK_TAG}"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker stop shopkart-api || true"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker rm shopkart-api || true"
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "docker run -d \
+                             --name shopkart-api \
+                             --restart unless-stopped \
+                             -p 8000:8000 \
+                             ${ECR_REGISTRY}/${ECR_REPOSITORY}:${params.ROLLBACK_TAG}"
+                    """
+                }
+            }
+        }
+
+        stage('Rollback Health Check') {
+            when {
+                expression {
+                    params.ROLLBACK_TAG?.trim()
+                }
+            }
+
+            steps {
+                sshagent(['stage-ssh-key']) {
+                    sh """
+                        sleep 5
+
+                        ssh -o StrictHostKeyChecking=no \
+                            ec2-user@10.10.12.129 \
+                            "curl -f http://localhost:8000/health"
+                    """
+                }
+            }
+        }
+
         stage('Verify ECR Image') {
             steps {
                 sh '''
@@ -216,65 +279,3 @@ pipeline {
     }
 }
 
-stage('Production Rollback') {
-    when {
-        expression {
-            params.ROLLBACK_TAG?.trim()
-        }
-    }
-
-    steps {
-        echo "Rolling back Production to shopkart-api:${params.ROLLBACK_TAG}"
-
-        sshagent(['stage-ssh-key']) {
-            sh """
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "aws ecr get-login-password --region ${AWS_REGION} | \
-                     docker login \
-                     --username AWS \
-                     --password-stdin ${ECR_REGISTRY}"
-
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "docker pull ${ECR_REGISTRY}/${ECR_REPOSITORY}:${params.ROLLBACK_TAG}"
-
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "docker stop shopkart-api || true"
-
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "docker rm shopkart-api || true"
-
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "docker run -d \
-                     --name shopkart-api \
-                     --restart unless-stopped \
-                     -p 8000:8000 \
-                     ${ECR_REGISTRY}/${ECR_REPOSITORY}:${params.ROLLBACK_TAG}"
-            """
-        }
-    }
-}
-
-stage('Rollback Health Check') {
-    when {
-        expression {
-            params.ROLLBACK_TAG?.trim()
-        }
-    }
-
-    steps {
-        sshagent(['stage-ssh-key']) {
-            sh """
-                sleep 5
-
-                ssh -o StrictHostKeyChecking=no \
-                    ec2-user@10.10.12.129 \
-                    "curl -f http://localhost:8000/health"
-            """
-        }
-    }
-}
