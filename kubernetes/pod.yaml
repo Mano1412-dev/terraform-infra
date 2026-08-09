@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: shopkart-api
+  namespace: shopkart
+
+spec:
+  containers:
+    - name: shopkart-api
+      image: shopkart-api:k8s
+      imagePullPolicy: Never
+
+      ports:
+        - containerPort: 8000
